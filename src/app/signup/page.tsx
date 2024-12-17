@@ -258,7 +258,7 @@ export default function SignupPage() {
                                     required
                                 >
                                   {countryCodes.map((data,id)=>(
-                                    <option key={id} value={data.code}>{data.code},{data.flag}</option>
+                                    <option key={id} value={data.code}>{data.flag}   {data.code}</option>
                                   ))}
                                 </select>
                             </div>
@@ -325,12 +325,14 @@ export default function SignupPage() {
                     dataDisplay?
                     (
                         <div className='mt-4'>
+                            <div className='text-black'>User Type : {users.User}</div>
                             <div className='text-black'>First Name : {users.FirstName}</div>
                             <div className='text-black'>Last Name : {users.LastName}</div>
                             <div className='text-black'>Email : {users.Email}</div>
                             <div className='text-black'>Country Code : {users.CountryCode}</div>
                             <div className='text-black'>Phone No : {users.PhoneNo}</div>
                             <div className='text-black'>Password : {users.Password}</div>
+                            <div className='text-black'>Confirm Password : {users.Compassword}</div>
                         </div>
                     ) : 
                     (
