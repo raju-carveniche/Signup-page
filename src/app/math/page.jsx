@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { EditableMathField } from "react-mathquill";
 import { addStyles } from "react-mathquill";
+import { MathJaxProvider, MathJaxHtml } from 'mathjax3-react';
 import katex from "katex"; // Import KaTeX for rendering
 import "katex/dist/katex.min.css";
 
@@ -33,87 +34,74 @@ export default function MathEditor() {
   const [plainText, setPlainText] = useState(""); // Plain text input
   const [renderedLatex, setRenderedLatex] = useState(""); // Store rendered LaTeX
 
-  // Handle symbol click in the popup
+
+  let html=[];
+
   const handleSymbolClick = (symbol) => {
     setLatexInput((prevLatexInput) => prevLatexInput + symbol); // Append symbol
   };
 
-  // Handle "Submit" from the popup and update the main text field
+ 
   const handlePopupSubmit = () => {
-    // Render the LaTeX input into HTML (KaTeX renders LaTeX to HTML)
-    console.log("Latex input:", latexInput);
+    html.push(`<span>${latexInput}</span>`);
     const renderedMath = katex.renderToString(latexInput, { throwOnError: false });
+    const rendered = katex.renderToString(latexInput, { 
+      output:"html",
+      throwOnError: false });
 
-    // Get the editable div by its ID
+    console.log("this is html of Math Equition : - ", rendered );
+   
     const editableDiv = document.getElementById("add_to_me");
-
-    // Check if the div is found
     if (editableDiv) {
-      // Insert the rendered math (HTML) directly into the div
+     
       editableDiv.innerHTML = editableDiv.innerHTML + renderedMath;
       console.log("Rendered LaTeX inserted:", renderedMath);
     } else {
       console.error("Editable div not found!");
     }
-
-    // Clear the LaTeX input field
     setLatexInput("");
 
-    // Close the popup
     setPopup(false);
   };
 
-  // Function to extract LaTeX from rendered HTML
-  const extractLatexFromRenderedMath = () => {
-    const renderedMath = document.getElementById("add_to_me")?.innerHTML;
+ 
+   
 
-    if (!renderedMath) {
-      console.error("No content in 'add_to_me' div.");
-      return '';
-    }
-
-    // Create a temporary container to parse the HTML content
-    const tempContainer = document.createElement('div');
-    tempContainer.innerHTML = renderedMath;
-
-    // Find all annotation tags which contain raw LaTeX
-    const latexAnnotations = tempContainer.querySelectorAll('annotation[encoding="application/x-tex"]');
-
-    if (latexAnnotations.length > 0) {
-      // Extract the raw LaTeX from the annotation tag
-      const rawLatex = latexAnnotations[0].textContent;
-      console.log("Extracted Raw LaTeX:", rawLatex);
-      return rawLatex;
-    } else {
-      console.error("No raw LaTeX found.");
-      return '';
-    }
-  };
-
-  // Handle LaTeX rendering and insertion into main content area
   const handleSubmit = () => {
     try {
-      const renderedMath = katex.renderToString(plainText, { throwOnError: false });
+      const renderedMath = katex.renderToString(plainText, { 
+        output:"htmlAndMathml",
+        throwOnError: false });
+        // console.log("this is render data have anice things ",renderedMath)
       setRenderedLatex(renderedMath); // Rendered math for display
     } catch (error) {
       console.error("Error rendering LaTeX:", error);
     }
+    console.log()
 
     const editableDiv = document.getElementById("add_to_me");
     const content = editableDiv ? editableDiv.innerHTML : '';
 
     // Log the content to the console
-    console.log("Content in the div:", content);
+    console.log("Content in the div:", content);  
+    // console.log("this is final data : ----- ", plainText+ renderedMath);
 
     // You can also extract the raw LaTeX from the rendered math here
-    const extractedLatex = extractLatexFromRenderedMath();
-    console.log("Extracted LaTeX from rendered math:", extractedLatex);
+    // const extractedLatex = extractLatexFromRenderedMath();
+    // console.log("Extracted LaTeX from rendered math:", extractedLatex);
   };
 
-  // Toggle popup visibility
+
   const togglePopup = () => {
     setPopup((prevPopup) => !prevPopup);
   };
+
+  useEffect(()=>{
+    console.log(html);
+  })
+
+
+
 
   return (
     <div className="relative">
@@ -200,6 +188,12 @@ export default function MathEditor() {
           className="mt-4"
           dangerouslySetInnerHTML={{ __html: renderedLatex }} // Render LaTeX as HTML
         />
+
+        <div>
+          <MathJaxProvider>
+          <MathJaxHtml html={html}/>
+          </MathJaxProvider>
+        </div>
       </div>
     </div>
   );
