@@ -1,200 +1,132 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
-import { EditableMathField } from "react-mathquill";
-import { addStyles } from "react-mathquill";
-import { MathJaxProvider, MathJaxHtml } from 'mathjax3-react';
-import katex from "katex"; // Import KaTeX for rendering
-import "katex/dist/katex.min.css";
+import React, { useState, useRef, useEffect } from 'react';
+import dynamic from 'next/dynamic';
+import katex from 'katex'; // Import KaTeX for rendering math
+import 'katex/dist/katex.min.css'; // Import KaTeX styles
 
-// Dynamically adds the necessary styles to the head of your document
-addStyles();
+const MathEditorPopup = dynamic(() => import('@/app/component/home'), { ssr: false });
 
-export default function MathEditor() {
-  const latexSymbols = [
-    { symbol: " + ", latex: "+" },
-    { symbol: " - ", latex: "-" },
-    { symbol: " × ", latex: "\\times" },
-    { symbol: " ÷ ", latex: "\\div" },
-    { symbol: " = ", latex: "=" },
-    { symbol: " ≠ ", latex: "\\neq" },
-    { symbol: " ≈ ", latex: "\\approx" },
-    { symbol: " α ", latex: "\\alpha" },
-    { symbol: " β ", latex: "\\beta" },
-    { symbol: " ∑ ", latex: "\\sum" },
-    { symbol: " ∫ ", latex: "\\int" },
-    { symbol: " √ ", latex: "\\sqrt{}" },
-    { symbol: " π ", latex: "\\pi" },
-    { symbol: " ∞ ", latex: "\\infty" },
-    { symbol: " frac ", latex: "\\frac{}{}" },
-  ];
+const Home = () => {
+  const [content, setContent] = useState('');
+  const [isMathEditorOpen, setMathEditorOpen] = useState(false);
+  const contentRef = useRef(null);
 
-  const [popup, setPopup] = useState(false);
-  const [latexInput, setLatexInput] = useState(""); // LaTeX input for math
-  const [plainText, setPlainText] = useState(""); // Plain text input
-  const [renderedLatex, setRenderedLatex] = useState(""); // Store rendered LaTeX
-
-
-  let html=[];
-
-  const handleSymbolClick = (symbol) => {
-    setLatexInput((prevLatexInput) => prevLatexInput + symbol); // Append symbol
-  };
-
- 
-  const handlePopupSubmit = () => {
-    html.push(`<span>${latexInput}</span>`);
-    const renderedMath = katex.renderToString(latexInput, { throwOnError: false });
-    const rendered = katex.renderToString(latexInput, { 
-      output:"html",
-      throwOnError: false });
-
-    console.log("this is html of Math Equition : - ", rendered );
-   
-    const editableDiv = document.getElementById("add_to_me");
-    if (editableDiv) {
-     
-      editableDiv.innerHTML = editableDiv.innerHTML + renderedMath;
-      console.log("Rendered LaTeX inserted:", renderedMath);
-    } else {
-      console.error("Editable div not found!");
+  const handleInsertEquation = (equation) => {
+    const renderedEquation = katex.renderToString(equation, {
+      throwOnError: false,
+    });
+  
+    // Create a span element for the equation
+    const span = document.createElement('span');
+    span.className = 'mq-selectable';
+    span.setAttribute('data-latex', equation);
+    span.setAttribute('contenteditable', 'false'); // Make the equation non-editable
+    span.innerHTML = renderedEquation;
+  
+    // Append the equation span to the contentEditable div
+    if (contentRef.current) {
+      const selection = window.getSelection();
+      if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+  
+        // Insert the span at the current cursor position
+        range.deleteContents();
+        range.insertNode(span);
+  
+        // Create a space after the equation so the cursor moves outside
+        const space = document.createTextNode(' ');
+        range.insertNode(space);
+  
+        // Move the cursor after the newly inserted span
+        range.setStartAfter(space);
+        range.setEndAfter(space);
+        selection.removeAllRanges();
+        selection.addRange(range);
+  
+        // Update the content state
+        setContent(contentRef.current.innerHTML);
+      } else {
+        // No selection, handle if needed (e.g., insert at the end of the content)
+        const div = contentRef.current;
+        div.appendChild(span);
+        div.appendChild(document.createTextNode(' ')); // Optional: Add space after equation
+      }
+  
+      setMathEditorOpen(false);
     }
-    setLatexInput("");
-
-    setPopup(false);
   };
+  
 
- 
-   
-
+  // Handle form submission
   const handleSubmit = () => {
-    try {
-      const renderedMath = katex.renderToString(plainText, { 
-        output:"htmlAndMathml",
-        throwOnError: false });
-        // console.log("this is render data have anice things ",renderedMath)
-      setRenderedLatex(renderedMath); // Rendered math for display
-    } catch (error) {
-      console.error("Error rendering LaTeX:", error);
+    // Extract original LaTeX from spans
+    const div = document.createElement('div');
+    div.innerHTML = content;
+    const equations = div.querySelectorAll('.mq-selectable');
+    equations.forEach((span) => {
+      const latex = span.getAttribute('data-latex');
+      span.innerHTML = latex; // Replace with original LaTeX
+    });
+
+    console.log('Final Content:', div.innerHTML); // This is the submitted content
+  };
+
+  // Track changes in the contentEditable field
+  const handleContentChange = () => {
+    if (contentRef.current) {
+      setContent(contentRef.current.innerHTML);
     }
-    console.log()
-
-    const editableDiv = document.getElementById("add_to_me");
-    const content = editableDiv ? editableDiv.innerHTML : '';
-
-    // Log the content to the console
-    console.log("Content in the div:", content);  
-    // console.log("this is final data : ----- ", plainText+ renderedMath);
-
-    // You can also extract the raw LaTeX from the rendered math here
-    // const extractedLatex = extractLatexFromRenderedMath();
-    // console.log("Extracted LaTeX from rendered math:", extractedLatex);
   };
 
-
-  const togglePopup = () => {
-    setPopup((prevPopup) => !prevPopup);
-  };
-
-  useEffect(()=>{
-    console.log(html);
-  })
-
-
-
+  // Automatically update the content in the div when the content state changes
+  useEffect(() => {
+    if (contentRef.current && content !== contentRef.current.innerHTML) {
+      contentRef.current.innerHTML = content;
+    }
+  }, [content]);
 
   return (
-    <div className="relative">
-      {/* Main text area for user input */}
-      <div className="mb-6 flex flex-col md:flex-row gap-4">
-        <div
-          id="add_to_me"
-          className="border p-2 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"
-          contentEditable={true} // Make this div editable
-          onInput={(e) => setPlainText(e.target.innerText)} // Update plain text
-          placeholder="Enter your text or LaTeX here" // Placeholder text
-        />
-        <button
-          onClick={handleSubmit} // Handle text submission
-          className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none"
-        >
-          Submit
-        </button>
-        <button
-          onClick={togglePopup} // Open popup for math symbols
-          className="bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 focus:outline-none"
-        >
-          Insert Math Equation
-        </button>
-      </div>
+    <div className="flex justify-center items-center min-h-screen bg-gray-900">
+      <div className="p-6 bg-gray-800 rounded shadow-md border border-white w-full max-w-[600px] sm:w-[500px] md:w-[400px] lg:w-[400px] xl:w-[400px] mt-10">
+        <div className="flex flex-col gap-4 mb-4">
+          <button
+            className="px-5 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
+            onClick={() => setMathEditorOpen(true)}
+          >
+           Math Editor
+          </button>
 
-      {/* Popup for LaTeX symbol toolbox */}
-      {popup && (
-        <div>
-          <div className="fixed inset-0 bg-black opacity-50 z-40" />
+          <div
+            ref={contentRef}
+            className="border border-gray-300 p-4 bg-white rounded text-black w-full mb-4"
+            contentEditable
+            onInput={handleContentChange}
+            style={{ minHeight: '80px', fontSize: '16px', lineHeight: '1.5', cursor: 'text' }}
+          />
 
-          <div className="fixed inset-0 flex justify-center items-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg max-w-4xl w-full">
-              <h2 className="text-2xl font-semibold mb-4 text-black text-center">
-                LaTeX Symbol Toolbox
-              </h2>
-              <div className="toolbox mb-6">
-                <div className="grid grid-cols-4 gap-4">
-                  {latexSymbols.map((item, index) => (
-                    <button
-                      key={index}
-                      className="p-2 border rounded-lg hover:bg-gray-100 text-black focus:outline-none"
-                      onClick={() => handleSymbolClick(item.latex)}
-                    >
-                      {item.symbol}
-                    </button>
-                  ))}
-                </div>
-              </div>
+          <button
+            onClick={handleSubmit}
+            className="px-5 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition"
+          >
+            Submit
+          </button>
+        </div>
 
-              {/* MathQuill editor inside the popup */}
-              <div className="mb-6 bg-white text-black flex">
-                <EditableMathField
-                  className="mathquill-example-field border p-4 rounded-lg w-full text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  latex={latexInput}
-                  onChange={(mathField) => setLatexInput(mathField.latex())}
-                />
-              </div>
-
-              {/* Submit and Close buttons for popup */}
-              <div className="flex justify-center gap-4">
-                <button
-                  onClick={handlePopupSubmit}
-                  className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none"
-                >
-                  Submit
-                </button>
-                <button
-                  onClick={togglePopup} // Close popup
-                  className="bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600 focus:outline-none"
-                >
-                  Close
-                </button>
-              </div>
+        {/* Math Editor Popup */}
+        {isMathEditorOpen && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
+            <div>
+              <MathEditorPopup
+                onInsertEquation={handleInsertEquation}
+                onClose={() => setMathEditorOpen(false)}
+              />
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Rendered LaTeX in the content area */}
-      <div className="mt-6">
-        <h3 className="text-lg font-semibold">Rendered LaTeX:</h3>
-        <div
-          className="mt-4"
-          dangerouslySetInnerHTML={{ __html: renderedLatex }} // Render LaTeX as HTML
-        />
-
-        <div>
-          <MathJaxProvider>
-          <MathJaxHtml html={html}/>
-          </MathJaxProvider>
-        </div>
+        )}
       </div>
     </div>
   );
-}
+};
+
+export default Home;

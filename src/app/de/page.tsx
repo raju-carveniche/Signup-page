@@ -36,13 +36,21 @@ export default function MathEditor() {
   // Handle symbol click in the popup
   const handleSymbolClick = (symbol) => {
     setLatexInput((prevLatexInput) => prevLatexInput + symbol); // Append symbol
+    // console.log(`Symbol clicked: ${symbol}`); // Log the clicked symbol
   };
 
   // Handle "Submit" from the popup and update the main text field
   const handlePopupSubmit = () => {
-    // Render the LaTeX input into HTML (KaTeX renders LaTeX to HTML)
-    console.log("Latex input:", latexInput);
-    const renderedMath = katex.renderToString(latexInput, { throwOnError: false });
+    // console.log("Latex input from popup:", latexInput);
+    // console.log("Plain text value:", plainText);
+    // console.log("Length of plain text:", plainText.length);
+
+    const renderedMath = katex.renderToString(latexInput,
+      
+      { throwOnError: false });
+
+    // console.log("------- ", renderedMath);
+    // console.log("Rendered LaTeX:", renderedMath); // Log the rendered LaTeX
 
     // Get the editable div by its ID
     const editableDiv = document.getElementById("add_to_me");
@@ -51,7 +59,20 @@ export default function MathEditor() {
     if (editableDiv) {
       // Insert the rendered math (HTML) directly into the div
       editableDiv.innerHTML = editableDiv.innerHTML + renderedMath;
-      console.log("Rendered LaTeX inserted:", renderedMath);
+      console.log("Editable div content after insertion:", editableDiv.innerHTML);
+
+      console.log(editableDiv);//-----------------------------------------------------------
+
+      const katexSpan = document.querySelector(".katex");
+      // Check if katexSpan is found
+      if (katexSpan) {
+        // Fetch the LaTeX code from the MathML annotation
+        const annotationElement = katexSpan.querySelector("annotation[encoding='application/x-tex']");
+        const annotationData = annotationElement ? annotationElement.outerHTML : null;
+
+        // Output the annotation tag along with its content
+        // console.log("Annotation Data:", annotationData);
+      }
     } else {
       console.error("Editable div not found!");
     }
@@ -95,9 +116,11 @@ export default function MathEditor() {
     try {
       const renderedMath = katex.renderToString(plainText, {
         output: "mathml",
-        throwOnError: false });
+        throwOnError: false
+      });
       setRenderedLatex(renderedMath); // Rendered math for display
-      console.log("this is math ml",renderedMath);
+      console.log("MathML Output:", renderedMath); // Log MathML
+      console.log("Plain text length:", plainText.length); // Log the length of the plain text
     } catch (error) {
       console.error("Error rendering LaTeX:", error);
     }
@@ -106,11 +129,11 @@ export default function MathEditor() {
     const content = editableDiv ? editableDiv.innerHTML : '';
 
     // Log the content to the console
-    // console.log("Content in the div:", content);
+    console.log("Content in the editable div:", content);
 
     // You can also extract the raw LaTeX from the rendered math here
     const extractedLatex = extractLatexFromRenderedMath();
-    // console.log("Extracted LaTeX from rendered math:", extractedLatex);
+    console.log("Extracted LaTeX from rendered math:", extractedLatex);
   };
 
   // Toggle popup visibility
@@ -197,13 +220,10 @@ export default function MathEditor() {
       )}
 
       {/* Rendered LaTeX in the content area */}
-      <div className="mt-6">
-        <h3 className="text-lg font-semibold">Rendered LaTeX:</h3>
-        <div
-          className="mt-4"
-          dangerouslySetInnerHTML={{ __html: renderedLatex }} // Render LaTeX as HTML
-        />
-      </div>
+      <div
+        className="rendered-math mt-6"
+        // dangerouslySetInnerHTML={{ __html: renderedLatex }} // Render the LaTeX
+      />
     </div>
   );
 }
